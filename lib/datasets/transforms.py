@@ -44,12 +44,16 @@ class Normalize(object):
     """Normalize the given image with mean and standard deviation."""
 
     def __init__(self, mean, std):
+        assert (isinstance(mean, collections.Iterable))
+        assert (isinstance(std, collections.Iterable))
+        assert len(mean) == len(std)
         self.mean = mean
         self.std = std
+        self.size = len(mean)
 
     def __call__(self, img):
-        mean = tf.constant(self.mean, dtype=tf.float32, shape=[1, 1, 3], name='img_mean')
-        std = tf.constant(self.std, dtype=tf.float32, shape=[1, 1, 3], name='img_std')
+        mean = tf.constant(self.mean, dtype=tf.float32, shape=[1, 1, self.size], name='img_mean')
+        std = tf.constant(self.std, dtype=tf.float32, shape=[1, 1, self.size], name='img_std')
         return tf.divide(tf.subtract(img, mean), std)
 
     def __repr__(self):
@@ -89,7 +93,7 @@ class RandomVerticalFlip(object):
 
 
 class VerticalFlip(object):
-    """Vertically flip the given image randomly."""
+    """Vertically flip the given image."""
 
     def __call__(self, img):
         return tf.image.flip_up_down(img)
@@ -99,10 +103,10 @@ class VerticalFlip(object):
 
 
 class Reshape(object):
-    """Resize the input image to the given size."""
+    """Resize the input image to the given shape."""
 
     def __init__(self, shape):
-        assert (isinstance(shape, collections.Iterable) and len(shape) == 4)
+        assert (isinstance(shape, collections.Iterable))
         self.shape = shape
 
     def __call__(self, img):
@@ -229,12 +233,15 @@ class RandomRotation(object):
 
 
 class SubtractMean(object):
+    """Zero-Center the given image."""
+
     def __init__(self, mean):
-        assert (isinstance(mean, collections.Iterable) and len(mean) == 3)
+        assert (isinstance(mean, collections.Iterable))
         self.mean = mean
+        self.size = len(mean)
 
     def __call__(self, img):
-        re = tf.subtract(img, tf.constant(self.mean, dtype=tf.float32, shape=[1, 1, 3], name='img_mean'))
+        re = tf.subtract(img, tf.constant(self.mean, dtype=tf.float32, shape=[1, 1, self.size], name='img_mean'))
         return re
 
     def __repr__(self):

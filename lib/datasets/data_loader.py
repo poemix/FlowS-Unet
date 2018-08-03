@@ -34,14 +34,15 @@ class FolderLoader(object):
         data_names = list(map(lambda x: x.split('/')[-1].split('.')[0], data_paths))
         mask_paths = list(map(lambda x: '{}{}.{}'.format(mask_root, x, mask_suffix), data_names))
 
-        random.seed(seed)
-        randnum = random.randint(0, 2018)
-        random.seed(randnum)
-        random.shuffle(data_paths)
-        random.seed(randnum)
-        random.shuffle(data_names)
-        random.seed(randnum)
-        random.shuffle(mask_paths)
+        if shuffle:
+            random.seed(seed)
+            randnum = random.randint(0, 2018)
+            random.seed(randnum)
+            random.shuffle(data_paths)
+            random.seed(randnum)
+            random.shuffle(data_names)
+            random.seed(randnum)
+            random.shuffle(mask_paths)
 
         # print(data_paths)
         # print(data_names)
@@ -53,6 +54,7 @@ class FolderLoader(object):
             with tf.device('/cpu:0'):
                 self.batch_ops, self.n_sample = self.folder_batch(data_paths=data_paths, mask_paths=mask_paths,
                                                                   data_names=data_names, batch_size=batch_size,
+                                                                  height=height, width=width,
                                                                   transformer_fn=transformer_fn, num_epochs=num_epochs,
                                                                   shuffle=shuffle, min_after_dequeue=min_after_dequeue,
                                                                   allow_smaller_final_batch=allow_smaller_final_batch,
@@ -72,8 +74,9 @@ class FolderLoader(object):
         return self.sess.run(self.batch_ops)
 
     @staticmethod
-    def folder_batch(data_paths, mask_paths, data_names, batch_size, transformer_fn=None, num_epochs=None, shuffle=True,
-                     min_after_dequeue=50, allow_smaller_final_batch=False, num_threads=2, seed=None, scope=None):
+    def folder_batch(data_paths, mask_paths, data_names, batch_size, height=256, width=256, transformer_fn=None,
+                     num_epochs=None, shuffle=True, min_after_dequeue=50, allow_smaller_final_batch=False,
+                     num_threads=2, seed=None, scope=None):
         with tf.name_scope(scope, 'folder_batch'):
             n_sample = len(data_paths)
 
@@ -87,10 +90,12 @@ class FolderLoader(object):
                                                                        num_epochs=num_epochs)
 
             data = tfread_npy(data_path)
-            data = tf.reshape(data, tf.stack([256, 256, 8]))
+            data = tf.reshape(data, tf.stack([height, width, 8]))
 
             mask = tfread_tif(mask_path)
-            mask = tf.reshape(mask, tf.stack([256, 256]))
+            mask = tf.reshape(mask, tf.stack([height, width]))
+
+            mask = tf.one_hot(mask, 2, on_value=1., off_value=0.)
 
             if transformer_fn is not None:
                 data = transformer_fn(data)
@@ -122,7 +127,7 @@ class FolderLoader(object):
 
 if __name__ == '__main__':
     loader = FolderLoader(data_root='E:/tianchi/dataset/s1/256v1/data', mask_root='E:/tianchi/dataset/s1/256v1/mask',
-                          batch_size=16)
+                          batch_size=64)
 
     for i in range(10):
         batch = loader.batch()

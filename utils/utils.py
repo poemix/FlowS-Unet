@@ -22,5 +22,5 @@ def tfread_npy(path):
 
 def tfread_tif(path):
     def fn(p):
-        return cv2.imread(bytes.decode(p), cv2.IMREAD_UNCHANGED).astype(np.float32)
-    return tf.py_func(fn, [path], tf.float32)
+        return cv2.imread(bytes.decode(p), cv2.IMREAD_UNCHANGED)
+    return tf.py_func(fn, [path], tf.uint8)
